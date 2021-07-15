@@ -4,6 +4,7 @@ module.exports = {
     unauthorized: 'Unauthorized',
     requiredToken: 'Token is required',
     notValidToken: 'Not valid token',
-    forbidden: 'forbidden',
-    notValidFile: 'Not valid file'
+    forbidden: 'Forbidden',
+    notValidFile: 'Not valid file',
+    noUser: 'No user'
 };

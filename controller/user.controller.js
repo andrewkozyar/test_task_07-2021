@@ -1,10 +1,12 @@
 const fs = require('fs-extra').promises;
 
-const { passwordHasher } = require('../helper');
+const { passwordHasher, tokenizer } = require('../helper');
 const {
-    errorMessagesEnum, responseCodesEnum, responseMessagesEnum, userStatusesEnum
+    emailActionsEnum, errorMessagesEnum, responseCodesEnum, responseMessagesEnum, userStatusesEnum
 } = require('../constant');
-const { fileService, userService } = require('../service');
+const {
+    fileService, emailService, userService, oAuthService
+} = require('../service');
 
 module.exports = {
     getAllUsers: async (req, res, next) => {
@@ -40,6 +42,9 @@ module.exports = {
 
             const user = await userService.createUser({ ...req.body, password: hashPassword });
 
+            emailService.sendMail(user.email, emailActionsEnum.WELCOME,
+                { userName: user.name, activeAccountUrl: `http://localhost:5000/auth/${user._id}` });
+
             if (avatar) {
                 const avatarsPath = [];
                 for (let i = 0; i < avatar.length; i++) {
@@ -64,7 +69,10 @@ module.exports = {
     deleteUser: async (req, res, next) => {
         try {
             const { userID } = req.params;
+            const user = await userService.findSingleUser(userID);
             await userService.updateUserById(userID, { status: userStatusesEnum.Deleted });
+
+            emailService.sendMail(user.email, emailActionsEnum.GOODBYE, { userName: user.name });
 
             res.status(responseCodesEnum.DELETED).json(responseMessagesEnum.delete);
         } catch (e) {
@@ -89,9 +97,41 @@ module.exports = {
             }
             await userService.updateUserById(userID, { avatar: user.avatar });
 
-            res.status(responseCodesEnum.DELETED).json(responseMessagesEnum.delete);
+            res.status(responseCodesEnum.OK).json(responseMessagesEnum.changeAvatar);
         } catch (e) {
             next(e);
         }
-    }
+    },
+
+    sendMailToChangePass: async (req, res, next) => {
+        try {
+            const { userID } = req.params;
+            const user = await userService.findSingleUser(userID);
+
+            const tokens = tokenizer();
+
+            await oAuthService.createTokens({ ...tokens, user: userID });
+
+            emailService.sendMail(user.email, emailActionsEnum.CHANGEPASSWORD,
+                { userName: user.name, changePasswordUrl: `http://localhost:5000/users/${userID}/password?${tokens.access_token}` });
+
+            res.status(responseCodesEnum.OK).json(responseMessagesEnum.sendMailToChangePass);
+        } catch (e) {
+            next(e);
+        }
+    },
+
+    changePass: async (req, res, next) => {
+        try {
+            const { params: { userID }, body: { password } } = req;
+
+            const hashPassword = await passwordHasher.hash(password);
+
+            await userService.updateUserById(userID, { password: hashPassword });
+
+            res.status(responseCodesEnum.OK).json(responseMessagesEnum.changePassword);
+        } catch (e) {
+            next(e);
+        }
+    },
 };

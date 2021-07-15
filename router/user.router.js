@@ -1,7 +1,7 @@
 const router = require('express').Router();
 
-const userController = require('../controller/user.controller');
-const { fileMiddleware, userMiddleware } = require('../middleware');
+const { userController } = require('../controller');
+const { authMiddleware, fileMiddleware, userMiddleware } = require('../middleware');
 
 router.get('/', userController.getAllUsers);
 router.get('/:userID', userController.getSingleUser);
@@ -13,7 +13,14 @@ router.post(
     userController.createUser
 );
 router.use('/:userID', userMiddleware.isUserIDValid);
-router.delete('/:userID', userController.deleteUser);
-router.patch('/:userID/avatar', fileMiddleware.checkFileMiddleware, userController.changeAvatar);
+router.delete('/:userID', authMiddleware.checkAccessTokenMiddleware, userController.deleteUser);
+router.patch(
+    '/:userID/avatar',
+    authMiddleware.checkAccessTokenMiddleware,
+    fileMiddleware.checkFileMiddleware,
+    userController.changeAvatar
+);
+router.post('/:userID/password', authMiddleware.checkAccessTokenMiddleware, userController.sendMailToChangePass);
+router.patch('/:userID/password', authMiddleware.checkAccessTokenMiddleware, userController.changePass);
 
 module.exports = router;
