@@ -7,20 +7,25 @@ router.get('/', userController.getAllUsers);
 router.get('/:userID', userController.getSingleUser);
 router.post(
     '/',
-    userMiddleware.isUserEmailRepeated,
     userMiddleware.isUserValid,
     fileMiddleware.checkFileMiddleware,
+    userMiddleware.isUserEmailRepeated,
     userController.createUser
 );
 router.use('/:userID', userMiddleware.isUserIDValid);
 router.delete('/:userID', authMiddleware.checkAccessTokenMiddleware, userController.deleteUser);
 router.patch(
     '/:userID/avatar',
-    authMiddleware.checkAccessTokenMiddleware,
     fileMiddleware.checkFileMiddleware,
+    authMiddleware.checkAccessTokenMiddleware,
     userController.changeAvatar
 );
 router.post('/:userID/password', authMiddleware.checkAccessTokenMiddleware, userController.sendMailToChangePass);
-router.patch('/:userID/password', authMiddleware.checkAccessTokenMiddleware, userController.changePass);
+router.patch(
+    '/:userID/password',
+    userMiddleware.isPasswordValid,
+    authMiddleware.checkAccessTokenMiddleware,
+    userController.changePass
+);
 
 module.exports = router;
