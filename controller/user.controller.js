@@ -2,7 +2,7 @@ const fs = require('fs-extra').promises;
 
 const { passwordHasher, tokenizer } = require('../helper');
 const {
-    emailActionsEnum, errorMessagesEnum, responseCodesEnum, responseMessagesEnum, userStatusesEnum
+    emailActionsEnum, errorMessagesEnum, responseCodesEnum, responseMessagesEnum, urlEnum, userStatusesEnum
 } = require('../constant');
 const {
     fileService, emailService, userService, oAuthService
@@ -43,7 +43,7 @@ module.exports = {
             const user = await userService.createUser({ ...req.body, password: hashPassword });
 
             emailService.sendMail(user.email, emailActionsEnum.WELCOME,
-                { userName: user.name, activeAccountUrl: `http://localhost:5000/auth/${user._id}` });
+                { userName: user.name, activeAccountUrl: `${urlEnum.authURL}${user._id}` });
 
             if (avatar) {
                 const avatarsPath = [];
@@ -113,7 +113,10 @@ module.exports = {
             await oAuthService.createTokens({ ...tokens, user: userID });
 
             emailService.sendMail(user.email, emailActionsEnum.CHANGEPASSWORD,
-                { userName: user.name, changePasswordUrl: `http://localhost:5000/users/${userID}/password?access_token=${tokens.access_token}` });
+                {
+                    userName: user.name,
+                    changePasswordUrl: `${urlEnum.userURL}${userID}/password?access_token=${tokens.access_token}`
+                });
 
             res.status(responseCodesEnum.OK).json(responseMessagesEnum.sendMailToChangePass);
         } catch (e) {
@@ -134,4 +137,20 @@ module.exports = {
             next(e);
         }
     },
+
+    changeNameOrAge: async (req, res, next) => {
+        try {
+            const { params: { userID }, body: { age, name } } = req;
+
+            if (age) {
+                await userService.updateUserById(userID, { age });
+            }
+            if (name) {
+                await userService.updateUserById(userID, { name });
+            }
+            res.status(responseCodesEnum.OK).json(responseMessagesEnum.changeAvatar);
+        } catch (e) {
+            next(e);
+        }
+    }
 };

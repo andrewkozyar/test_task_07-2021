@@ -4,6 +4,7 @@ const { userController } = require('../controller');
 const { authMiddleware, fileMiddleware, userMiddleware } = require('../middleware');
 
 router.get('/', userController.getAllUsers);
+
 router.get('/:userID', userController.getSingleUser);
 router.post(
     '/',
@@ -15,11 +16,19 @@ router.post(
 router.use('/:userID', userMiddleware.isUserIDValid);
 router.delete('/:userID', authMiddleware.checkAccessTokenMiddleware, userController.deleteUser);
 router.patch(
+    '/:usreID',
+    userMiddleware.nameAndAgeValid,
+    authMiddleware.checkAccessTokenMiddleware,
+    userController.changeNameOrAge
+);
+
+router.patch(
     '/:userID/avatar',
     fileMiddleware.checkFileMiddleware,
     authMiddleware.checkAccessTokenMiddleware,
     userController.changeAvatar
 );
+
 router.post('/:userID/password', authMiddleware.checkAccessTokenMiddleware, userController.sendMailToChangePass);
 router.patch(
     '/:userID/password',
