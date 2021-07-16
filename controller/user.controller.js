@@ -113,7 +113,7 @@ module.exports = {
             await oAuthService.createTokens({ ...tokens, user: userID });
 
             emailService.sendMail(user.email, emailActionsEnum.CHANGEPASSWORD,
-                { userName: user.name, changePasswordUrl: `http://localhost:5000/users/${userID}/password?${tokens.access_token}` });
+                { userName: user.name, changePasswordUrl: `http://localhost:5000/users/${userID}/password?access_token=${tokens.access_token}` });
 
             res.status(responseCodesEnum.OK).json(responseMessagesEnum.sendMailToChangePass);
         } catch (e) {
